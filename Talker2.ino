@@ -5,7 +5,7 @@ byte SLAVE_ADDRESS = 0x09;      // address of the device I want to talk to
 byte REG_ADDRESS = 0x06;        // the register that sets the Capacitor shunt voltage
 byte READ_LENGTH = 0x02;        // 16 bit return
 unsigned int NEW_VALUE = 0x3FFF;         // what we want it to be idealy
-
+char buffer[4];                     // needed for formatting
 
 void setup() {
   Serial.begin(9600);      		  // initialize a serial port to talk: 
@@ -19,10 +19,12 @@ void DisplayValues() {
   Serial.println(SLAVE_ADDRESS, HEX); 
   Serial.print("Reg Address is ");
   Serial.println(REG_ADDRESS, HEX);
-  Serial.print("New Value is ");
-  Serial.println(NEW_VALUE, HEX);
   
-  Serial.print("Current Value ");
+  Serial.print("New Value is ");
+  sprintf(buffer, "0x%04X", NEW_VALUE);
+  Serial.println(buffer);             // print the value in hex format
+  
+  Serial.print("Current Value 0x");
   ReadValue();
 
   Serial.println("Press Shh to change Slave Address, Rhh to change Register");
@@ -32,6 +34,9 @@ void DisplayValues() {
   Serial.println();
 }
 
+void FormatedPrint(unsigned int val, int digits) {
+
+}
 
 void ReadValue() {
   Wire.beginTransmission(SLAVE_ADDRESS);  
@@ -40,11 +45,13 @@ void ReadValue() {
 
   Wire.requestFrom(SLAVE_ADDRESS, READ_LENGTH); // request 2 bytes from register 
   byte buff[READ_LENGTH];             // create a buffer 
+
   Wire.readBytes(buff, READ_LENGTH);  // read into it
   Wire.endTransmission(true);         // end this tx  
 
   for (int i = 0; i < READ_LENGTH; i++) {
-    Serial.print(buff[i], HEX);    // print the initial 
+    sprintf(buffer, "%02X", buff[i]);
+    Serial.print(buffer);    // print the initial 
   }
 
   Serial.println();
