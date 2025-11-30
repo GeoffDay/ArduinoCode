@@ -1,4 +1,4 @@
-// This is Talker2 that takes sends a preset text and transmits it over I2C to the other Uno board. 
+// This is Talker2 that reads data from the serial port to set the Shunt voltage register of the LTC3350 Supercap management IC.
 #include <Wire.h>
 
 byte SLAVE_ADDRESS = 0x09;      // address of the device I want to talk to
