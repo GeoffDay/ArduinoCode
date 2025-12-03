@@ -1,16 +1,16 @@
 // This is Talker2 that reads data from the serial port to set the Shunt voltage register of the LTC3350 Supercap management IC.
 #include <Wire.h>
 
-byte SLAVE_ADDRESS = 0x09;      // address of the device I want to talk to
-byte REG_ADDRESS = 0x06;        // the register that sets the Capacitor shunt voltage
-byte READ_LENGTH = 0x02;        // 16 bit return
-unsigned int NEW_VALUE = 0x3FFF;         // what we want it to be idealy
+byte SLAVE_ADDRESS = 0x09;          // address of the device I want to talk to
+byte REG_ADDRESS = 0x06;            // the register that sets the Capacitor shunt voltage
+byte READ_LENGTH = 0x02;            // 16 bit return
+unsigned int NEW_VALUE = 0x3FFF;    // what we want it to be idealy
 char buffer[4];                     // needed for formatting
 
 void setup() {
-  Serial.begin(9600);      		  // initialize a serial port to talk: 
+  Serial.begin(9600);      		      // initialize a serial port to talk: 
   DisplayValues(); 
-  Wire.begin();                 // join I2C bus (address optional for master)
+  Wire.begin();                     // join I2C bus (address optional for master)
 }
 
 void DisplayValues() {
@@ -19,10 +19,9 @@ void DisplayValues() {
   Serial.println(SLAVE_ADDRESS, HEX); 
   Serial.print("Reg Address is ");
   Serial.println(REG_ADDRESS, HEX);
-  
-  Serial.print("New Value is ");
-  sprintf(buffer, "0x%04X", NEW_VALUE);
-  Serial.println(buffer);             // print the value in hex format
+ 
+  sprintf(buffer, "New Value is 0x%04X", NEW_VALUE);
+  Serial.println(buffer);               // print the value in hex format
   
   Serial.print("Current Value 0x");
   ReadValue();
@@ -34,25 +33,20 @@ void DisplayValues() {
   Serial.println();
 }
 
-void FormatedPrint(unsigned int val, int digits) {
-
-}
 
 void ReadValue() {
   Wire.beginTransmission(SLAVE_ADDRESS);  
-  Wire.write(REG_ADDRESS);            // set register to read
-  Wire.endTransmission(false);        // false to not release the line
+  Wire.write(REG_ADDRESS);                      // set register to read
+  Wire.endTransmission(false);                  // false to not release the line
 
   Wire.requestFrom(SLAVE_ADDRESS, READ_LENGTH); // request 2 bytes from register 
-  byte buff[READ_LENGTH];             // create a buffer 
+  byte buff[READ_LENGTH];                       // create a buffer 
 
-  Wire.readBytes(buff, READ_LENGTH);  // read into it
-  Wire.endTransmission(true);         // end this tx  
+  Wire.readBytes(buff, READ_LENGTH);            // read into it
+  Wire.endTransmission(true);                   // end this tx  
 
-  for (int i = 0; i < READ_LENGTH; i++) {
-    sprintf(buffer, "%02X", buff[i]);
-    Serial.print(buffer);    // print the initial 
-  }
+  sprintf(buffer, "%02X%02X", buff[0], buff[1]);
+  Serial.print(buffer);                         // print the big buffer. ugly but it works. 
 
   Serial.println();
 }
@@ -60,11 +54,9 @@ void ReadValue() {
 void ProgramValue() {
   Wire.beginTransmission(SLAVE_ADDRESS);  // start another tx
   Wire.write(REG_ADDRESS);                // set the register to change
+  Wire.write(NEW_VALUE % 256);            // lsb first
   Wire.write(NEW_VALUE / 256);
-  // Serial.print(NEW_VALUE / 256);
-  Wire.write(NEW_VALUE % 256);
-  // Serial.print(NEW_VALUE % 256);
-  Wire.endTransmission(true);              // end this one too.
+  Wire.endTransmission(true);             // end this one too.
   
   delay(100);
 
@@ -72,32 +64,13 @@ void ProgramValue() {
   ReadValue();
 }
 
-byte GetHexByte(){
-  byte val = 0;
-
-  while (Serial.available()) {       // something arrived via serial connection?
-    delay(100);
-    byte c= Serial.read();        // read the new character
-
-    if (isHexadecimalDigit(c)) {
-      // hex character to the 4bit equivalent number, using the ascii table indexes
-      if (c >= '0' && c <= '9') c = c - '0';
-      else if (c >= 'a' && c <= 'f') c = c - 'a' + 10;
-      else if (c >= 'A' && c <= 'F') c = c - 'A' + 10;
-     
-      val = (val << 4) | (c & 0xF); // shift 4 to make space for new digit, and add the 4 bits of the new digit 
-    }
-  }  
-  return val;
-}
-
 
 unsigned int GetHexInt(){
   unsigned int val = 0;
 
-  while (Serial.available()) {       // something arrived via serial connection?
+  while (Serial.available()) {      // something arrived via serial connection?
     delay(100);
-    byte c= Serial.read();        // read the new character
+    byte c= Serial.read();          // read the new character
 
     if (isHexadecimalDigit(c)) {
       // hex character to the 4bit equivalent number, using the ascii table indexes
@@ -110,6 +83,7 @@ unsigned int GetHexInt(){
   }  
   return val;
 }
+
 
 void loop() {
    if (Serial.available()) {}      // something arrived via serial connection?
@@ -117,16 +91,11 @@ void loop() {
       char c= Serial.read(); // read the new character
       
       switch(c) {
-        case 'S': SLAVE_ADDRESS = GetHexByte();    // set new Slave address
-                  DisplayValues();   
+        case 'S': SLAVE_ADDRESS = GetHexInt();    // set new Slave address                
           break;
-        case 'R': REG_ADDRESS = GetHexByte();      // set new Register
-                  DisplayValues();
+        case 'R': REG_ADDRESS = GetHexInt();      // set new Register                  
           break;
-        case 'V': NEW_VALUE = GetHexInt();       // set new Value
-                  // Serial.println(NEW_VALUE);
-                  // Serial.println(NEW_VALUE, HEX);
-                  DisplayValues();
+        case 'V': NEW_VALUE = GetHexInt();       // set new Value                  
           break;
         case 'X': Serial.print("Current Value ");
                   ReadValue();                  // Examine current settings
@@ -139,3 +108,24 @@ void loop() {
           break;
       }
   }
+
+
+// byte GetHexByte(){
+//   byte val = 0;
+
+//   while (Serial.available()) {       // something arrived via serial connection?
+//     delay(100);
+//     byte c= Serial.read();           // read the new character
+
+//     if (isHexadecimalDigit(c)) {
+//       // hex character to the 4bit equivalent number, using the ascii table indexes
+//       if (c >= '0' && c <= '9') c = c - '0';
+//       else if (c >= 'a' && c <= 'f') c = c - 'a' + 10;
+//       else if (c >= 'A' && c <= 'F') c = c - 'A' + 10;
+     
+//       val = (val << 4) | (c & 0xF); // shift 4 to make space for new digit, and add the 4 bits of the new digit 
+//     }
+//   }  
+//   return val;
+// }
+
