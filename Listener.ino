@@ -10,11 +10,10 @@ int RxBytes;
 
 void I2C_TxHandler(void)
 {
-  Wire.write(SHUNT_VALUE/256);
-  Wire.write(SHUNT_VALUE%256);
+  Wire.write(SHUNT_VALUE % 256);
+  Wire.write(SHUNT_VALUE / 256);
 
-  Serial.print("transmitting ");
-  sprintf(buffer, "%04X", SHUNT_VALUE);
+  sprintf(buffer, "transmitting %02X%02X", SHUNT_VALUE % 256, SHUNT_VALUE / 256);
   Serial.print(buffer);
   Serial.println();
 }
