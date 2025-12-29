@@ -1,4 +1,4 @@
-// This is Talker2 that reads data from the serial port to set the Shunt voltage register of the LTC3350 Supercap management IC.
+// This is Talker2 used to write to the I2C port of the LTC3350 Supercap management IC.
 #include <Wire.h>
 
 byte SLAVE_ADDRESS = 0x09;          // address of the device I want to talk to
@@ -14,16 +14,17 @@ void setup() {
 }
 
 void DisplayValues() {
+  Serial.println();
   Serial.println("LTC3350 I2C programmer");
   Serial.print("Slave Address is ");
   Serial.println(SLAVE_ADDRESS, HEX); 
   Serial.print("Reg Address is ");
   Serial.println(REG_ADDRESS, HEX);
  
-  sprintf(buffer, "New Value is 0x%04X", NEW_VALUE);
+  sprintf(buffer, "New Value to be written is 0x%04X", NEW_VALUE);
   Serial.println(buffer);               // print the value in hex format
   
-  Serial.print("Current Value 0x");
+  Serial.print("Value read from LTC3350 is 0x");
   ReadValue();
 
   Serial.println("Press Shh to change Slave Address, Rhh to change Register");
@@ -45,7 +46,7 @@ void ReadValue() {
   Wire.readBytes(buff, READ_LENGTH);            // read into it
   Wire.endTransmission(true);                   // end this tx  
 
-  sprintf(buffer, "%02X%02X", buff[0], buff[1]);
+  sprintf(buffer, "%02X%02X", buff[1], buff[0]);
   Serial.print(buffer);                         // print the big buffer. ugly but it works. 
 
   Serial.println();
@@ -54,8 +55,8 @@ void ReadValue() {
 void ProgramValue() {
   Wire.beginTransmission(SLAVE_ADDRESS);  // start another tx
   Wire.write(REG_ADDRESS);                // set the register to change
-  Wire.write(NEW_VALUE % 256);            // lsb first
-  Wire.write(NEW_VALUE / 256);
+  Wire.write(NEW_VALUE & 0x00FF);         // lsb first. Lets make it obvious 
+  Wire.write((NEW_VALUE >> 8) & 0x00FF);  // that we are sending LSB first.
   Wire.endTransmission(true);             // end this one too.
   
   delay(100);
@@ -128,4 +129,3 @@ void loop() {
 //   }  
 //   return val;
 // }
-
