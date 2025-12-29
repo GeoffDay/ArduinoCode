@@ -10,10 +10,10 @@ int RxBytes;
 
 void I2C_TxHandler(void)
 {
-  Wire.write(SHUNT_VALUE % 256);
-  Wire.write(SHUNT_VALUE / 256);
+  Wire.write(SHUNT_VALUE & 0x00FF);         // lsb first. Lets make it obvious 
+  Wire.write((SHUNT_VALUE >> 8) & 0x00FF);  // that we are sending LSB first.
 
-  sprintf(buffer, "transmitting %02X%02X", SHUNT_VALUE % 256, SHUNT_VALUE / 256);
+  sprintf(buffer, "transmitting %02X then %02X", SHUNT_VALUE & 0x00FF, (SHUNT_VALUE >> 8) & 0x00FF);
   Serial.print(buffer);
   Serial.println();
 }
@@ -22,21 +22,23 @@ void I2C_RxHandler(int numBytes)
 {
   byte nBytes = 0;
   byte buff[READ_LENGTH];
-  char buffer[2];                     // needed for formatting
+  char buffer[2];                  // needed for formatting
 
   Serial.println();
   Serial.println("Received ");
 
   while(Wire.available()) {  
-    byte oneByte = Wire.read();    // Read Any Received Data
+    byte oneByte = Wire.read();    // Read Any Received Data. LSB first
     buff[nBytes++] = oneByte; 
-    sprintf(buffer, "%02X", oneByte);
-    Serial.println(buffer);
+    sprintf(buffer, "%02X ", oneByte);
+    Serial.print(buffer);
   }
 
-  if (nBytes == 3) {					// print the 2 byte integer version
-      RxBytes = (buff[1]  << 8) + buff[2];
-      SHUNT_VALUE = RxBytes;		// update current value 			
+  Serial.println();
+
+  if (nBytes == 3) {					    // print the 2 byte integer version
+      RxBytes = (buff[2]  << 8) + buff[1];  // first byte LSB
+      SHUNT_VALUE = RxBytes;		  // update current value 			
       Serial.println(SHUNT_VALUE, HEX);
   }  
 }
